@@ -1,0 +1,18 @@
+# 本地密钥与运行期产物 —— 绝不入库
+.hermes/ai.env
+.hermes/app.pid
+.hermes/logs/
+.hermes/tmp/
+.env
+*.env
+!.hermes/ai.env.example
+
+# 构建产物
+target/
+*.jar
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/

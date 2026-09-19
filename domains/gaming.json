@@ -1,0 +1,29 @@
+{
+  "domain": "gaming",
+  "description": "游戏内购（示例：故意用同一份零售数据，说明『换领域只是换解释』。它不是真实游戏数据，只用于验证配置驱动的接入流程。）",
+
+  "entityTypes": { "main": "Player", "item": "Item" },
+  "eventTypes":  { "positive": "PURCHASE", "negative": "REFUND" },
+
+  "requiredFields": ["entityId", "productId", "eventTime", "quantity", "unitPrice"],
+  "fieldTypes": { "eventTime": "time", "quantity": "int", "unitPrice": "decimal" },
+
+  "skip": [
+    { "field": "entityId",  "op": "blank",      "reason": "缺少玩家ID" },
+    { "field": "productId", "op": "blank",      "reason": "缺少道具ID" },
+    { "field": "eventTime", "op": "unparsable", "reason": "时间无法解析" }
+  ],
+
+  "classify": [
+    { "field": "quantity", "op": "lt", "value": 0, "as": "negative" }
+  ],
+  "defaultEventType": "positive",
+
+  "absoluteQuantity": true,
+  "amount": { "op": "multiply", "abs": ["quantity"], "with": ["unitPrice"] },
+
+  "entityAttributes": [
+    { "target": "main", "name": "region",     "from": "group",       "type": "string" },
+    { "target": "item", "name": "displayName","from": "description", "type": "string" }
+  ]
+}

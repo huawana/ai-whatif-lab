@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI What-If Lab · 控制台</title>
+<style>
+  :root{
+    --bg:#0f1319; --panel:#171d26; --panel2:#1e2632; --line:#2a3441;
+    --fg:#e6edf3; --dim:#8b98a5; --dim2:#5d6b7a;
+    --up:#3fb950; --down:#f85149; --warn:#d29922; --info:#58a6ff; --accent:#a371f7;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  a{color:var(--info)}
+  code,.mono{font-family:ui-monospace,Consolas,"Courier New",monospace}
+  [v-cloak]{display:none}
+
+  header{position:sticky;top:0;z-index:10;background:rgba(15,19,25,.94);
+         backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 18px}
+  .hrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{font-weight:600;font-size:16px}
+  .brand small{color:var(--dim);font-weight:400;margin-left:6px}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;
+        background:var(--panel2);border:1px solid var(--line);font-size:12px;color:var(--dim)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--dim2)}
+  .dot.ok{background:var(--up)} .dot.bad{background:var(--down)} .dot.warn{background:var(--warn)}
+
+  main{max-width:1500px;margin:0 auto;padding:16px 18px 80px}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(430px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .card>h2{margin:0;padding:10px 14px;font-size:13px;letter-spacing:.4px;color:var(--dim);
+           background:var(--panel2);border-bottom:1px solid var(--line);text-transform:uppercase;
+           display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:600}
+  .card>h2 .sub{text-transform:none;letter-spacing:0;font-weight:400;color:var(--dim2);font-size:12px}
+  .card .body{padding:12px 14px}
+  .card .body.tight{padding:0}
+
+  label.f{display:block;color:var(--dim);font-size:12px;margin:8px 0 3px}
+  input,select,textarea,button{font:inherit;color:var(--fg)}
+  input,select,textarea{width:100%;background:#0d1117;border:1px solid var(--line);
+        border-radius:6px;padding:6px 9px}
+  textarea{resize:vertical;min-height:60px}
+  input[type=checkbox]{width:auto}
+  button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+        padding:6px 12px;cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){border-color:var(--info);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:var(--info);border-color:var(--info);color:#04121f;font-weight:600}
+  button.primary:hover:not(:disabled){background:#79b8ff;color:#04121f}
+  button.ghost{background:transparent}
+  button.tiny{padding:3px 8px;font-size:12px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--dim)} .muted2{color:var(--dim2)} .small{font-size:12px}
+  .up{color:var(--up)} .down{color:var(--down)} .warn{color:var(--warn)} .accent{color:var(--accent)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--dim);font-weight:600;font-size:12px;background:#141a22;position:sticky;top:52px}
+  tr:hover td{background:#1b222c}
+  .num{font-variant-numeric:tabular-nums}
+
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+  .kv .k{color:var(--dim)}
+  .kv .v{text-align:right;font-variant-numeric:tabular-nums}
+
+  .badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600}
+  .badge.sig{background:rgba(63,185,80,.16);color:var(--up);border:1px solid rgba(63,185,80,.4)}
+  .badge.ns{background:rgba(139,152,165,.12);color:var(--dim);border:1px solid var(--line)}
+  .badge.warn{background:rgba(210,153,34,.16);color:var(--warn);border:1px solid rgba(210,153,34,.4)}
+  .badge.err{background:rgba(248,81,73,.15);color:var(--down);border:1px solid rgba(248,81,73,.4)}
+
+  .bar{position:relative;height:9px;background:#0d1117;border-radius:3px;overflow:hidden;min-width:90px}
+  .bar i{position:absolute;top:0;bottom:0;border-radius:3px}
+  .bar i.base{background:linear-gradient(90deg,#3b4756,#5b6b7d)}
+  .bar i.scen{background:linear-gradient(90deg,#1f6feb,#58a6ff)}
+  .bar u{position:absolute;top:-3px;bottom:-3px;width:2px;background:#e6edf3}
+
+  .alert{border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:13px;border:1px solid}
+  .alert.err{background:rgba(248,81,73,.09);border-color:rgba(248,81,73,.45)}
+  .alert.warn{background:rgba(210,153,34,.09);border-color:rgba(210,153,34,.45)}
+  .alert.ok{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.38)}
+  .alert .t{font-weight:600;margin-bottom:3px}
+  pre{background:#0d1117;border:1px solid var(--line);border-radius:6px;padding:9px;
+      overflow:auto;max-height:260px;font-size:12px;margin:6px 0 0}
+  .chip{display:inline-block;background:#0d1117;border:1px solid var(--line);border-radius:5px;
+        padding:2px 7px;margin:2px 4px 2px 0;font-size:12px}
+  .logline{display:flex;gap:8px;font-size:12px;padding:3px 0;border-bottom:1px dashed #232c37}
+  .logline .t{color:var(--dim2);flex:0 0 62px}
+  .logline .m{color:var(--dim);flex:1;word-break:break-all}
+  .logline .d{color:var(--dim2);flex:0 0 60px;text-align:right}
+  .diff-old{color:var(--down)} .diff-new{color:var(--up)}
+  .empty{color:var(--dim2);padding:14px;text-align:center;font-size:13px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:760px){.split{grid-template-columns:1fr}}
+  .scroll{max-height:340px;overflow:auto}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+
+<!-- ======================= 顶栏：所有"平台当前状态"一眼可见 ======================= -->
+<header>
+  <div class="hrow">
+    <div class="brand">AI What-If Lab <small>假设分析控制台</small></div>
+    <span class="pill"><i class="dot" :class="healthDot"></i>平台 {{ health.status || '—' }}</span>
+    <span class="pill"><i class="dot" :class="dotOf(health.mysql)"></i>MySQL {{ health.mysql || '—' }}</span>
+    <span class="pill"><i class="dot" :class="dotOf(health.redis)"></i>Redis {{ health.redis || '—' }}</span>
+    <span class="pill"><i class="dot" :class="aiDot"></i>AI {{ aiStatus.aiAvailable ? aiStatus.model : '不可用' }}</span>
+    <span class="pill">调度 {{ health.dispatcher || '—' }}</span>
+    <span class="pill">引擎 {{ health.engineVersion || '—' }}</span>
+    <span class="pill" v-if="cacheStats">缓存命中 {{ cacheStats.hits }}/{{ cacheStats.hits + cacheStats.misses }}
+      <span class="muted2">({{ cacheStats.hitRate }}%)</span></span>
+    <button class="tiny ghost" @click="refreshAll" :disabled="busy.any">刷新</button>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= 错误面板：业务错误码要说人话 ======================= -->
+  <div v-if="error" class="alert err">
+    <div class="t">
+      请求失败 · 业务码 {{ error.code }}
+      <span v-if="codeLabel(error.code)">（{{ codeLabel(error.code) }}）</span>
+    </div>
+    <div>{{ error.message }}</div>
+    <div class="small muted" style="margin-top:5px" v-if="codeHint(error.code)">{{ codeHint(error.code) }}</div>
+    <button class="tiny ghost" style="margin-top:6px" @click="error=null">关闭</button>
+  </div>
+  <div v-if="notice" class="alert ok">
+    <div>{{ notice }}</div>
+  </div>
+
+  <!-- AI 不可用时的横幅：明确告诉使用者"哪些还能用" -->
+  <div v-if="!aiStatus.aiAvailable && aiStatus.unavailableReason" class="alert warn">
+    <div class="t">AI 能力当前不可用 —— 但确定性链路完全可用</div>
+    <div class="small">{{ aiStatus.unavailableReason }}</div>
+    <div class="small muted" style="margin-top:4px">
+      下面「手工构造情景 → 跑实验」这条路不依赖 AI；顶栏状态里的 MySQL / Redis 才是平台可用性的判据。
+    </div>
+  </div>
+
+  <!-- ======================= 第一行：数据集 / 规则 / 模型 ======================= -->
+  <div class="grid g3">
+    <!-- 数据集画像 -->
+    <div class="card">
+      <h2>数据集 <span class="sub">原始行 → 事件 → 画像</span></h2>
+      <div class="body">
+        <label class="f">选择数据集</label>
+        <select v-model="datasetId" @change="onDatasetChange">
+          <option v-for="d in datasets" :key="d.datasetId" :value="d.datasetId">
+            #{{ d.datasetId }} {{ d.name }} v{{ d.version }} · {{ d.status }}
+          </option>
+        </select>
+
+        <div v-if="profile" style="margin-top:10px" class="kv">
+          <span class="k">原始行数</span><span class="v num">{{ num(profile.rawRowCount ?? dataset?.rawRowCount) }}</span>
+          <span class="k">入库事件</span><span class="v num">{{ num(profile.eventCount) }}</span>
+          <span class="k">跳过行数</span><span class="v num">{{ num(profile.skippedRowCount ?? dataset?.skippedRowCount) }}</span>
+          <span class="k">实体数</span><span class="v num">{{ num(profile.entityCount) }}</span>
+          <span class="k">时间范围</span>
+          <span class="v small">{{ profile.timeRange?.min }} → {{ profile.timeRange?.max }}</span>
+        </div>
+        <div v-if="profile?.eventTypes" style="margin-top:8px">
+          <span v-for="e in profile.eventTypes" :key="e.event_type" class="chip">
+            {{ e.event_type }} <b class="num">{{ num(e.count) }}</b>
+            <span class="muted2">均值 {{ num(e.avg_price,2) }}</span>
+          </span>
+        </div>
+        <div v-if="profile?.entityTypes" style="margin-top:4px">
+          <span v-for="e in profile.entityTypes" :key="e.entity_type" class="chip">
+            {{ e.entity_type }} <b class="num">{{ num(e.cnt) }}</b>
+          </span>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="tiny ghost" @click="loadQuality">数据质量</button>
+          <button class="tiny ghost" @click="loadDiag">时间切分泄漏检查</button>
+        </div>
+        <pre v-if="quality">{{ pretty(quality) }}</pre>
+        <div v-if="diag" class="alert ok" style="margin-top:8px">
+          <div class="t">泄漏检查（必须三条全绿）</div>
+          <div class="kv small">
+            <span class="k">切分点 referenceTime</span><span class="v">{{ diag.referenceTime }}</span>
+            <span class="k">画像最晚信息 ≤ 切分点</span>
+            <span class="v" :class="diag.profileLastSeenLeak ? 'down':'up'">{{ diag.profileLastSeenLeak ? '泄漏!' : '通过' }}</span>
+            <span class="k">标签最早事件 &gt; 切分点</span>
+            <span class="v" :class="diag.labelWindowLeak ? 'down':'up'">{{ diag.labelWindowLeak ? '泄漏!' : '通过' }}</span>
+            <span class="k">两窗口事件交集 = 0</span>
+            <span class="v" :class="diag.overlapIsZero ? 'up':'down'">{{ diag.overlapIsZero ? '通过' : '有重叠!' }}</span>
+            <span class="k">画像/标签窗口事件数</span>
+            <span class="v num">{{ num(diag.history_events) }} / {{ num(diag.label_events) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 规则 -->
+    <div class="card">
+      <h2>当前业务规则 <span class="sub">情景 = 在它之上做改动</span></h2>
+      <div class="body">
+        <div v-if="!rules.length" class="empty">未加载</div>
+        <div v-for="rs in rules" :key="rs.version">
+          <div class="between">
+            <b>v{{ rs.version }} · {{ rs.setName }}</b>
+            <span class="badge ns">基线</span>
+          </div>
+          <div style="margin-top:8px">
+            <div v-for="r in rs.rules" :key="r.type" class="between"
+                 style="padding:6px 0;border-bottom:1px dashed #232c37">
+              <span><b>{{ r.type }}</b> <span class="muted small">{{ r.description }}</span></span>
+              <span class="chip mono">{{ JSON.stringify(r.params) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="small muted2" style="margin-top:8px">
+          提示：规则只有被翻译成「感知折扣率」才会影响客户行为 —— 这是规则作用于模型的唯一通道。
+        </div>
+      </div>
+    </div>
+
+    <!-- 模型 -->
+    <div class="card">
+      <h2>行为模型 <span class="sub">客户会不会买</span></h2>
+      <div class="body">
+        <div v-if="model">
+          <div class="row">
+            <button class="tiny ghost" @click="trainModel" :disabled="busy.train">
+              {{ busy.train ? '训练中…' : '重新训练（确定性）' }}
+            </button>
+            <span class="small muted2">同数据 + 同种子 → 权重逐位相同</span>
+          </div>
+          <div style="margin-top:8px" class="kv">
+            <span class="k">当前版本 / 类型</span>
+            <span class="v">{{ model.version }} · {{ model.type }}
+              <span class="muted2 small">(共 {{ modelList.length }} 个版本)</span></span>
+            <span class="k">AUC</span>
+            <span class="v num" :class="model.metrics?.auc > 0.5 ? 'up':'down'">{{ num(model.metrics?.auc,4) }}</span>
+            <span class="k">LogLoss</span><span class="v num">{{ num(model.metrics?.logLoss,4) }}</span>
+            <span class="k">准确率</span><span class="v num">{{ num(model.metrics?.accuracy,4) }}</span>
+            <span class="k">Brier</span><span class="v num">{{ num(model.metrics?.brier,4) }}</span>
+            <span class="k">样本（正例）</span>
+            <span class="v num">{{ num(model.samples) }}（{{ num(model.positives) }}）</span>
+            <span class="k">训练种子 / 时间</span>
+            <span class="v small">{{ model.trainingSeed }} · {{ model.trainedAt }}</span>
+          </div>
+          <div v-if="featureWeights.length" style="margin-top:10px">
+            <div class="between">
+              <span class="small muted">特征贡献（标准化后系数）</span>
+              <span class="small muted2">重要度</span>
+            </div>
+            <div v-for="w in featureWeights" :key="w.name" style="padding:3px 0">
+              <div class="between small">
+                <span class="mono">{{ w.name }}</span>
+                <span class="num" :class="w.value >= 0 ? 'up':'down'">
+                  {{ w.value >= 0 ? '+' : '' }}{{ num(w.value,4) }}
+                  <span class="muted2">{{ num((w.importance||0)*100,1) }}%</span></span>
+              </div>
+              <div class="bar" style="height:4px;margin-top:2px">
+                <i class="scen" :style="{left:'0%', width: Math.min(100,(w.importance||0)*100) + '%'}"></i>
+              </div>
+            </div>
+          </div>
+          <div v-if="features.length" class="small muted2" style="margin-top:6px">
+            特征顺序：{{ features.join(' → ') }}
+          </div>
+        </div>
+        <div v-else class="empty">该数据集还没有模型 —— 点下面按钮训练</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= AI 判列（Schema Mapper） =======================
+       这块的存在理由：换一个行业时，"哪一列是客户、哪一列是金额"不该由人对着表头猜。
+       流程是 提案 → 确定性校验 → **人工确认** → 冻结；界面上必须让人一眼看出：
+         · 谁判的（AI 还是规则基线）+ 用的哪个模型/提示词版本
+         · 每列判成了什么、凭什么（证据）、有多确定（置信度）
+         · 这张表能不能做 What-If（工况）—— 不能就直接说不能，不硬凑
+         · 哪些问题它不敢定（未决项）—— 未决项没清零就不允许冻结 -->
+  <div class="card" style="margin-top:14px">
+    <h2>AI 判列 <span class="sub">丢一份陌生 CSV → 每列是什么角色 → 你确认 → 冻结成领域配置</span></h2>
+    <div class="body">
+      <div class="row">
+        <input v-model="schemaPath" placeholder="CSV 路径，例：C:\data\orders.csv" style="flex:1"/>
+        <select v-model="schemaProducer" style="width:190px">
+          <option value="auto">自动（有 Key 就用 AI）</option>
+          <option value="heuristic">只用规则基线（对照）</option>
+        </select>
+        <button class="tiny" :disabled="busy.schema" @click="runSchemaPropose">
+          {{ busy.schema ? '判列中…' : '开始判列' }}
+        </button>
+      </div>
+      <div class="small muted" style="margin-top:6px">
+        当前判列生产者：<b>{{ schemaProducerStatus.llmAvailable ? 'AI' : '规则基线' }}</b>
+        <span v-if="schemaProducerStatus.llmAvailable">（{{ schemaProducerStatus.model }}，提示词 {{ schemaProducerStatus.promptVersion }}）</span>
+        <span v-else>（{{ schemaProducerStatus.llmReason }}）</span>
+      </div>
+
+      <template v-if="schema">
+        <div class="alert" :class="capClass(schema.capability)" style="margin-top:10px">
+          <div class="t">
+            工况 {{ schema.capability }} · {{ capLabel(schema.capability) }}
+            · 判定者 {{ schema.producer }}<span v-if="schema.model">（{{ schema.model }}）</span>
+            · 可直接冻结执行：<b>{{ schema.executable ? '是' : '否' }}</b>
+          </div>
+          <div class="small">{{ schema.capabilityReason }}</div>
+        </div>
+
+        <div class="scroll" style="max-height:320px;margin-top:10px">
+          <table>
+            <thead>
+              <tr><th style="width:22%">列</th><th style="width:190px">角色（可就地改判）</th>
+                  <th style="width:70px">置信度</th><th>证据（它凭什么这么判）</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in schema.columns" :key="c.column"
+                  :class="c.confidence < 0.75 ? 'diff-old' : ''">
+                <td class="small" style="font-family:ui-monospace,Consolas,monospace">{{ c.column }}</td>
+                <td>
+                  <select v-model="schemaEdits[c.column]" style="padding:2px 6px">
+                    <option value="">（保持 {{ c.role }}）</option>
+                    <option v-for="r in roleOptions" :key="r" :value="r">{{ r }}</option>
+                  </select>
+                </td>
+                <td class="num">{{ c.confidence.toFixed(2) }}</td>
+                <td class="small muted2">{{ c.evidence }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="small muted2" style="margin-top:4px">
+          置信度低于 0.75 的行标红：低置信度判定会被自动挪进未决项，不允许直接冻结。
+        </div>
+
+        <div v-if="schema.errors && schema.errors.length" class="alert err" style="margin-top:10px">
+          <div class="t">校验错误 {{ schema.errors.length }} 条 —— 校验不通过不允许冻结</div>
+          <div v-for="(e, i) in schema.errors" :key="i" class="small">✗ {{ e }}</div>
+        </div>
+
+        <div v-if="schema.unknowns && schema.unknowns.length" class="alert warn" style="margin-top:10px">
+          <div class="t">未决项 {{ schema.unknowns.length }} 条 —— 必须人裁决（不猜、不默认）</div>
+          <div v-for="(u, i) in schema.unknowns" :key="i" class="small">
+            ? [{{ u.column }}] {{ u.question }} <span class="muted2">— {{ u.why }}</span>
+          </div>
+          <div class="small" style="margin-top:5px">
+            处理方式：把上面的下拉改掉有争议的列，并勾选下面的"我确认已裁决"，然后冻结。
+          </div>
+        </div>
+
+        <div v-if="schema.warnings && schema.warnings.length" class="alert ok" style="margin-top:10px">
+          <div class="t">告警 {{ schema.warnings.length }} 条（不拦你，但要让你知道）</div>
+          <div v-for="(w, i) in schema.warnings" :key="i" class="small">… {{ w }}</div>
+        </div>
+
+        <div v-if="schema.derivationNotes && schema.derivationNotes.length" class="small muted" style="margin-top:8px">
+          <div v-for="(n, i) in schema.derivationNotes" :key="i">推导说明：{{ n }}</div>
+        </div>
+
+        <details style="margin-top:8px">
+          <summary class="small muted">展开：推导出的领域配置（由确定性代码生成，AI 一个字都没写）</summary>
+          <pre>{{ pretty(schema.derivedSpec) }}</pre>
+        </details>
+
+        <div class="row" style="margin-top:10px">
+          <input v-model="schemaDomain" placeholder="领域名，例：my_orders" style="width:180px"/>
+          <label class="small muted" style="display:flex;align-items:center;gap:6px;width:auto">
+            <input type="checkbox" v-model="schemaResolved" style="width:auto"/> 我确认已裁决未决项
+          </label>
+          <button class="tiny primary" :disabled="busy.confirmSchema" @click="confirmSchema">
+            确认并冻结成领域配置
+          </button>
+        </div>
+        <div class="small muted2" style="margin-top:4px">
+          冻结会写出 domains/&lt;领域名&gt;.json —— 与手写领域配置是**同一种格式、同一个校验器**；重启应用即生效。
+        </div>
+      </template>
+      <div v-else class="empty">还没判列 —— 填一个 CSV 路径（建议用「规则基线」先跑一遍做对照）</div>
+    </div>
+  </div>
+
+  <!-- ======================= 第二行：情景构造 ======================= -->
+  <div class="card" style="margin-top:14px">
+    <h2>① 构造情景
+      <span class="sub">两种方式，殊途同归：都会编译成同一份 Scenario DSL</span>
+    </h2>
+    <div class="body">
+      <div class="split">
+        <!-- 自然语言 -->
+        <div>
+          <label class="f">A · 用中文说（走 AI 编译器）</label>
+          <textarea v-model="nlText" placeholder="例如：把满100减10改成满80减15，模拟30天"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button @click="compileNL" :disabled="busy.compile || !aiStatus.aiAvailable">
+              {{ busy.compile ? '编译中…' : '只编译（预览 DSL）' }}
+            </button>
+            <button class="primary" @click="runWhatIf" :disabled="busy.whatif || !aiStatus.aiAvailable">
+              {{ busy.whatif ? '执行中…' : '一键 What-If（编译 → 跑实验 → 解释）' }}
+            </button>
+          </div>
+          <div v-if="compile" style="margin-top:10px">
+            <div class="between">
+              <span>
+                <span class="badge" :class="compile.success ? 'sig':'err'">
+                  {{ compile.success ? '编译成功' : '编译失败' }}</span>
+                <span class="small muted" style="margin-left:6px">
+                  尝试 {{ compile.attempts }} 次 · DSL 校验：
+                  {{ compile.validation?.valid === true ? '通过' : (compile.validation?.valid === false ? '未通过' : '—') }}
+                </span>
+              </span>
+              <button class="tiny ghost" @click="useCompiledDsl" v-if="compile.dsl">→ 填入手工编辑器</button>
+            </div>
+            <div v-if="compile.validation?.scenarioRuleSet" class="small muted" style="margin-top:6px">
+              情景规则：{{ compile.validation.scenarioRuleSet }}
+            </div>
+            <pre v-if="compile.dsl">{{ pretty(compile.dsl) }}</pre>
+            <details class="small muted2" style="margin-top:4px">
+              <summary>模型原始输出（用于排查模型有没有乱编字段）</summary>
+              <pre>{{ compile.rawModelOutput || '(空)' }}</pre>
+            </details>
+          </div>
+        </div>
+
+        <!-- 手工 -->
+        <div>
+          <label class="f">B · 手工改（不经过 AI，永远可用）</label>
+          <table>
+            <thead><tr><th>规则</th><th>字段</th><th>原值</th><th>新值</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="(c,i) in changes" :key="i">
+                <td>
+                  <select v-model="c.ruleType" style="width:130px">
+                    <option value="DISCOUNT">DISCOUNT 满减</option>
+                    <option value="PRICE">PRICE 价格</option>
+                    <option value="PROBABILITY">PROBABILITY 概率</option>
+                  </select>
+                </td>
+                <td>
+                  <select v-model="c.field" style="width:110px">
+                    <option v-for="f in fieldsOf(c.ruleType)" :key="f" :value="f">{{ f }}</option>
+                  </select>
+                </td>
+                <td><input v-model.number="c.from" type="number" step="any" style="width:80px"></td>
+                <td><input v-model.number="c.to" type="number" step="any" style="width:80px"></td>
+                <td><button class="tiny ghost" @click="changes.splice(i,1)">删</button></td>
+              </tr>
+              <tr v-if="!changes.length"><td colspan="5" class="empty">没有改动 = 恒等实验（两臂应逐位相同）</td></tr>
+            </tbody>
+          </table>
+          <div class="row" style="margin-top:8px">
+            <button class="tiny" @click="addChange">+ 加一条改动</button>
+            <button @click="validateManual" :disabled="busy.validate">校验（不落库）</button>
+            <button class="tiny ghost" @click="addPreset('满80减15')">预设：满100减10 → 满80减15</button>
+            <button class="tiny ghost" @click="addPreset('降价10%')">预设：降价 10%</button>
+            <button class="tiny ghost" @click="changes=[]">清空</button>
+          </div>
+          <div v-if="validation" style="margin-top:10px">
+            <div class="alert" :class="validation.valid ? 'ok':'err'" style="margin-bottom:0">
+              <div class="t">{{ validation.valid ? '校验通过' : '校验未通过' }}</div>
+              <div class="small">{{ validation.message }}</div>
+              <div class="small muted" v-if="validation.warnings?.length">警告：{{ validation.warnings.join('；') }}</div>
+            </div>
+            <div v-if="validation.ruleDiff" style="margin-top:8px">
+              <div class="small muted">规则差异（基线 → 情景）</div>
+              <!-- ruleDiff 是后端生成好的字符串数组（如 "DISCOUNT: {amount=10, threshold=100} → {amount=15.0, threshold=80.0}"），
+                   不是对象数组 —— 按对象渲染会一片空白 -->
+              <div v-for="(d,i) in validation.ruleDiff" :key="i" class="small mono">
+                <template v-if="String(d).indexOf('→') >= 0">
+                  <span class="diff-old">{{ String(d).split('→')[0] }}</span>
+                  <span class="diff-new">→ {{ String(d).split('→')[1] }}</span>
+                </template>
+                <template v-else>{{ d }}</template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= 第三行：实验参数 + 执行 ======================= -->
+  <div class="card" style="margin-top:14px">
+    <h2>② 运行实验 <span class="sub">基线 vs 情景，配对蒙特卡洛</span></h2>
+    <div class="body">
+      <div class="grid g3">
+        <div><label class="f">仿真次数（越大越稳，也越慢）</label>
+          <input v-model.number="params.simulations" type="number" min="10" max="5000"></div>
+        <div><label class="f">随机种子（同种子 → 同结果）</label>
+          <input v-model.number="params.seed" type="number"></div>
+        <div><label class="f">模拟周期（天）</label>
+          <input v-model.number="params.durationDays" type="number" min="1"></div>
+      </div>
+      <div class="grid g3" style="margin-top:6px">
+        <div><label class="f">抽样客户数</label>
+          <input v-model.number="params.activeCustomers" type="number" min="10"></div>
+        <div><label class="f">每客户候选商品数</label>
+          <input v-model.number="params.candidatesPerCustomer" type="number" min="1"></div>
+        <div>
+          <label class="f">执行方式</label>
+          <select v-model="params.sync">
+            <option :value="true">同步（直接等结果）</option>
+            <option :value="false">异步 + SSE 进度（看状态机）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <button class="primary" @click="runExperiment" :disabled="busy.run || !model">
+          {{ busy.run ? '计算中…' : '跑实验（基线 vs 情景）' }}
+        </button>
+        <button @click="runIdentity" :disabled="busy.identity">恒等自检（两臂必须逐位相同）</button>
+        <button @click="runConcurrent" :disabled="busy.concurrent">
+          {{ busy.concurrent ? '并发中…' : '并发去重测试（5 个相同请求）' }}
+        </button>
+        <span class="small muted2">需要先有模型；没有模型时按钮不可点</span>
+      </div>
+
+      <div v-if="progress.visible" style="margin-top:12px">
+        <div class="between small">
+          <span>状态 <b>{{ progress.status }}</b> · {{ progress.stage }}</span>
+          <span class="num">{{ progress.progress }}%</span>
+        </div>
+        <div class="bar" style="height:6px;margin-top:5px">
+          <i class="scen" :style="{left:'0%', width: Math.min(100, progress.progress) + '%'}"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= 第四行：结果 ======================= -->
+  <div class="card" style="margin-top:14px" v-if="result">
+    <h2>
+      ③ 结果 · 实验 #{{ result.experimentId }}
+      <span class="sub">
+        <span class="badge" :class="result.cacheHit ? 'warn':'ns'">
+          {{ result.cacheHit ? '缓存命中' : '本次现算' }}</span>
+        <span style="margin-left:6px">{{ result.elapsedMs }} ms</span>
+        <span style="margin-left:6px">{{ result.simulationCount }} 次仿真 × 2 臂</span>
+      </span>
+    </h2>
+    <div class="body tight">
+      <div class="alert ok" style="margin:12px 14px" v-if="headline"><b>{{ headline }}</b></div>
+      <table>
+        <thead><tr>
+          <th>指标</th><th>基线均值</th><th>基线 P5~P95</th>
+          <th>情景均值</th><th>情景 P5~P95</th><th>变化率</th>
+          <th>配对差值 95% 置信区间</th><th>p 值</th><th>效应量</th><th>结论</th>
+        </tr></thead>
+        <tbody>
+          <tr v-for="r in table" :key="r.metric">
+            <td><b>{{ r.label }}</b> <span class="muted2 small">{{ r.unit }}</span></td>
+            <td class="num">{{ num(r.baselineMean,2) }}</td>
+            <td><div class="bar"><i class="base" :style="barOf(r,'baseline')"></i></div>
+              <div class="small muted2 num">{{ numSmart(r.baselineP5) }}~{{ numSmart(r.baselineP95) }}</div></td>
+            <td class="num">{{ num(r.scenarioMean,2) }}</td>
+            <td><div class="bar"><i class="scen" :style="barOf(r,'scenario')"></i></div>
+              <div class="small muted2 num">{{ numSmart(r.scenarioP5) }}~{{ numSmart(r.scenarioP95) }}</div></td>
+            <td class="num" :class="cls(r.changeRate)"><b>{{ pct(r.changeRate) }}</b></td>
+            <td class="num small">{{ r.ci95Text }}</td>
+            <td class="num small">{{ pfmt(r.pValue) }}</td>
+            <td class="num small">{{ num(r.cohensD,2) }} <span class="muted2">({{ r.effectSizeLevel }})</span></td>
+            <td><span class="badge" :class="r.significant ? 'sig':'ns'">
+              {{ r.significant ? '显著' : '不显著' }}</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="body">
+        <div class="split">
+          <div>
+            <div class="small muted">诊断（这些数字决定了结论可不可信）</div>
+            <div class="kv small" style="margin-top:6px">
+              <span class="k">价格外推比例（情景价落历史区间外）</span>
+              <span class="v num">{{ num(diag2.outOfSupportRatioScenario,4) }}</span>
+              <span class="k">感知折扣率 基线 → 情景</span>
+              <span class="v num">{{ num(diag2.perceivedDiscountBaselineMean,6) }} → {{ num(diag2.perceivedDiscountScenarioMean,6) }}</span>
+              <span class="k">z 值拆解 vs 朴素实现 最大偏差</span>
+              <span class="v num" :class="diag2.fastVsNaiveMaxDiff < 1e-9 ? 'up':'down'">
+                {{ diag2.fastVsNaiveMaxDiff }}</span>
+              <span class="k">总决策数</span><span class="v num">{{ num(diag2.totalDecisions) }}</span>
+              <span class="k">结果指纹（缓存键）</span>
+              <span class="v mono small">{{ result.experimentMeta?.fingerprint }}</span>
+            </div>
+          </div>
+          <div>
+            <div class="between">
+              <span class="small muted">AI 解释（数字来自引擎，模型只组织语言）</span>
+              <button class="tiny ghost" @click="explainCurrent" :disabled="busy.explain || !aiStatus.aiAvailable">
+                {{ busy.explain ? '生成中…' : '生成解释' }}</button>
+            </div>
+            <div v-if="explanation" class="small" style="margin-top:6px;white-space:pre-wrap">{{ explanation }}</div>
+            <div v-else class="small muted2" style="margin-top:6px">未生成</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= 第五行：历史 + Agent + 日志 ======================= -->
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <h2>实验历史 <span class="sub">点一行加载结果</span>
+        <button class="tiny ghost" @click="loadExperiments">刷新</button>
+      </h2>
+      <div class="body tight scroll">
+        <table>
+          <thead><tr><th>#</th><th>状态</th><th>缓存</th><th>耗时</th><th>仿真</th><th>种子</th><th>创建时间</th></tr></thead>
+          <tbody>
+            <tr v-for="e in experiments" :key="e.experimentId" @click="loadResult(e.experimentId)"
+                style="cursor:pointer">
+              <td>{{ e.experimentId }}</td>
+              <td><span class="badge" :class="e.status==='SUCCESS' ? 'sig' : (e.status==='FAILED' ? 'err':'warn')">
+                {{ e.status }}</span></td>
+              <td>{{ e.cacheHit ? '命中' : '—' }}</td>
+              <td class="num">{{ e.elapsedMs }} ms</td>
+              <td class="num">{{ e.simulationCount }}</td>
+              <td class="num">{{ e.randomSeed }}</td>
+              <td class="small muted2">{{ e.createdAt }}</td>
+            </tr>
+            <tr v-if="!experiments.length"><td colspan="7" class="empty">还没有实验</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Agent 问答 <span class="sub">工具调用：它自己去查、去算</span></h2>
+      <div class="body">
+        <label class="f">问题</label>
+        <textarea v-model="agentQuestion"
+          placeholder="例如：现在的规则是什么？如果把门槛降到 80 会怎样？GMV 是怎么算的？"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="primary" @click="askAgent(false)" :disabled="busy.ask || !aiStatus.aiAvailable">
+            {{ busy.ask ? '思考中…' : '问分析师（可跑实验）' }}</button>
+          <button @click="askAgent(true)" :disabled="busy.ask || !aiStatus.aiAvailable">问只读顾问（省成本）</button>
+        </div>
+        <div v-if="agentAnswer" style="margin-top:10px">
+          <div class="small muted">
+            Agent：{{ agentAnswer.agent || '—' }} ·
+            工具数 {{ (aiStatus.tools || []).length }}
+          </div>
+          <div class="alert ok" style="margin-top:6px;white-space:pre-wrap">{{ agentAnswer.answer }}</div>
+          <div v-if="agentAnswer.error" class="small down">{{ agentAnswer.error }}</div>
+        </div>
+        <div class="small muted2" style="margin-top:8px">
+          当前可用工具：{{ (aiStatus.tools || []).join('、') || '—' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>操作日志 <span class="sub">每一步调了什么接口、花了多久、返回什么码</span>
+      <button class="tiny ghost" @click="logs=[]">清空</button></h2>
+    <div class="body">
+      <div v-for="(l,i) in logs" :key="i" class="logline">
+        <span class="t">{{ l.time }}</span>
+        <span class="m">{{ l.method }} {{ l.path }} <span :class="l.code === 0 ? 'up':'down'">code={{ l.code }}</span>
+          <span class="muted2">{{ l.note }}</span></span>
+        <span class="d">{{ l.ms }} ms</span>
+      </div>
+      <div v-if="!logs.length" class="empty">暂无操作</div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script src="/vendor/vue.global.prod.js"></script>
+<script>
+const { createApp, reactive, ref, computed, onMounted } = Vue;
+
+/* ---------------------------------------------------------------- 错误码 → 人话
+ * 这是本页最"有态度"的一块：业务错误码不是"出错了"，而是"明确地拒绝"。
+ * 尤其 1001（AI 被关掉）与 1005（AI 上游欠费/限流）必须区分开来 ——
+ * 前者是设计内的正常降级，后者是外部依赖故障，处理方式完全不同。 */
+const CODE_LABEL = {
+  1001: 'AI 未启用', 1002: '校验不通过', 1003: '资源不存在',
+  1004: '状态冲突', 1005: 'AI 上游失败', 1006: '缓存降级'
+};
+const CODE_HINT = {
+  1001: '这是正常降级：没配 Key 或总开关关闭。手工构造情景 → 跑实验这条确定性链路完全可用。',
+  1002: '模型或输入不合规：改一下 DSL 字段再试（DSL 里每个改动都要能对上当前规则的真实字段）。',
+  1003: '检查 datasetId / experimentId 是否存在（可能是数据集被清理了）。',
+  1004: '同一个实验正在跑或已完成，等它结束或换一组参数。',
+  1005: '上游模型服务不可用（常见原因：账户欠费、限流、超时）。平台已正确识别并降级，确定性链路不受影响；充好值重试即可。',
+  1006: 'Redis 不可用：结果只会变慢，不会算错（缓存降级为未命中，锁不会假装拿到）。'
+};
+
+createApp({
+  setup() {
+    const health = ref({}), aiStatus = ref({}), cacheStats = ref(null);
+    const datasets = ref([]), datasetId = ref(null);
+    const profile = ref(null), quality = ref(null), diag = ref(null);
+    const rules = ref([]), model = ref(null), modelList = ref([]), features = ref([]);
+    const featuresRaw = ref([]);
+    const nlText = ref('把满100减10改成满80减15，模拟30天');
+    const compile = ref(null), validation = ref(null);
+    const changes = ref([]);
+    const params = reactive({ simulations: 200, seed: 20260919, durationDays: 30,
+                              activeCustomers: 200, candidatesPerCustomer: 5, sync: true });
+    const result = ref(null), table = ref([]), explanation = ref(null);
+    const experiments = ref([]);
+    const agentQuestion = ref('现在的业务规则是什么？如果把满减门槛降到 80 会怎样？');
+    const agentAnswer = ref(null);
+    const error = ref(null), notice = ref(null), logs = ref([]);
+    // ---- AI 判列（Schema Mapper）----
+    const schemaPath = ref(''), schemaProducer = ref('auto');
+    const schema = ref(null), schemaProducerStatus = ref({});
+    const schemaEdits = reactive({});          // 列 → 人工改判的角色（空 = 保持原判）
+    const schemaDomain = ref(''), schemaResolved = ref(false);
+    /** 角色闭集 —— 与后端 ColumnRole 枚举**逐字对齐**（不一致会被后端拒掉，这是故意的）。 */
+    const roleOptions = ['ENTITY_ID','ITEM_ID','EVENT_TIME','QUANTITY','UNIT_PRICE','AMOUNT','ORDER_ID',
+      'CATEGORY','DESCRIPTION','EVENT_TYPE','LEVER','OUTCOME','COVARIATE','LABEL','MEASURE','TEXT','PII','IGNORE'];
+    const progress = reactive({ visible: false, progress: 0, status: '', stage: '' });
+    const busy = reactive({ any:false, compile:false, whatif:false, run:false, identity:false,
+                            concurrent:false, train:false, validate:false, ask:false, explain:false,
+                            schema:false, confirmSchema:false });
+
+    /* ------------------------------------------------------------ 基础工具 */
+    const num = (v, d = 0) => (v === null || v === undefined || isNaN(v))
+      ? '—' : Number(v).toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const pct = (v) => (v === null || v === undefined) ? '—' : (v >= 0 ? '+' : '') + Number(v).toFixed(2) + '%';
+    const pfmt = (v) => {
+      if (v === null || v === undefined) return '—';
+      const n = Number(v);
+      // p 恰好为 0 不是"零概率"，而是"小到 double 下溢" —— 直接显示 0.00e+0 会让人以为算错了
+      if (n === 0) return '<1e-300';
+      return n < 0.0001 ? n.toExponential(2) : n.toFixed(4);
+    };
+    /** 自适应小数位：客单价、转化率这类小数值用 0 位小数会被抹成 0（实测踩到 0~0） */
+    const numSmart = (v) => {
+      if (v === null || v === undefined || isNaN(v)) return '—';
+      const a = Math.abs(Number(v));
+      const d = a === 0 ? 0 : (a < 1 ? 3 : (a < 10 ? 2 : (a < 100 ? 1 : 0)));
+      return num(v, d);
+    };
+    const cls = (v) => v > 0 ? 'up' : (v < 0 ? 'down' : 'muted');
+    const pretty = (o) => JSON.stringify(o, null, 2);
+    const dotOf = (s) => s === 'UP' ? 'ok' : (s ? 'bad' : '');
+    const codeLabel = (c) => CODE_LABEL[c] || '';
+    const codeHint = (c) => CODE_HINT[c] || '';
+
+    const now = () => new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    function logStep(method, path, ms, code, note) {
+      logs.value.unshift({ time: now(), method, path, ms, code, note });
+      if (logs.value.length > 60) logs.value.pop();
+    }
+
+    /** 统一请求：把 {code,message,data} 拆开；code !== 0 直接抛成可展示的错误。 */
+    async function api(path, opts = {}) {
+      const { method = 'GET', body } = opts;
+      const t0 = performance.now();
+      let res, json = null;
+      try {
+        res = await fetch(path, {
+          method,
+          headers: body ? { 'Content-Type': 'application/json' } : {},
+          body: body ? JSON.stringify(body) : undefined
+        });
+        const text = await res.text();
+        try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+      } catch (e) {
+        const ms = Math.round(performance.now() - t0);
+        logStep(method, path, ms, -1, '网络错误：' + e.message);
+        throw { code: -1, message: '网络错误：' + e.message + '（应用是否还在跑？）' };
+      }
+      const ms = Math.round(performance.now() - t0);
+      if (json === null) {
+        logStep(method, path, ms, res.status, '响应不是 JSON（HTTP ' + res.status + '）');
+        throw { code: res.status, message: '响应不是 JSON（HTTP ' + res.status + '）' };
+      }
+      if (json.code !== 0) {
+        logStep(method, path, ms, json.code, '业务错误');
+        throw { code: json.code, message: json.message || '(无 message)' };
+      }
+      logStep(method, path, ms, 0, body ? '请求体已发送' : '');
+      return json.data;
+    }
+
+    /** 统一的"执行 + 错误展示"包装，避免每个按钮都写 try/catch。 */
+    async function guard(flag, fn, okMsg) {
+      error.value = null; notice.value = null; busy[flag] = true; busy.any = true;
+      try {
+        await fn();
+        if (okMsg) notice.value = okMsg;
+      } catch (e) {
+        error.value = { code: e.code ?? -1, message: e.message || String(e) };
+      } finally {
+        busy[flag] = false; busy.any = false;
+      }
+    }
+
+    /* ------------------------------------------------------------ 顶部状态 */
+    const healthDot = computed(() => health.value.status === 'UP' ? 'ok' : 'bad');
+    const aiDot = computed(() => aiStatus.value.aiAvailable ? 'ok' : 'warn');
+
+    async function refreshAll() {
+      error.value = null; busy.any = true;
+      try {
+        // 健康与 AI 状态是"平台的自述"，即使其它接口全挂也要能刷新出来
+        try { health.value = await api('/api/health'); } catch (e) { health.value = {}; error.value = e; }
+        try { aiStatus.value = await api('/api/ai/status'); } catch (e) { aiStatus.value = {}; }
+        try { cacheStats.value = await api('/api/experiments/cache-stats'); } catch (e) { cacheStats.value = null; }
+        await loadSchemaProducer();
+        await loadDatasets();
+      } finally { busy.any = false; }
+    }
+
+    async function loadDatasets() {
+      datasets.value = await api('/api/datasets');
+      if (datasets.value.length && !datasetId.value) {
+        datasetId.value = datasets.value[0].datasetId;
+        await onDatasetChange();
+      }
+    }
+
+    async function onDatasetChange() {
+      profile.value = null; quality.value = null; diag.value = null;
+      model.value = null; rules.value = []; result.value = null; table.value = []; explanation.value = null;
+      if (!datasetId.value) return;
+      const id = datasetId.value;
+      profile.value = await api('/api/datasets/' + id + '/profile');
+      rules.value = await api('/api/datasets/' + id + '/rules');
+      try {
+        // 注意：这个接口返回的是**模型列表**（同一数据集可以有多个版本），
+        // 不是单个对象 —— 曾经直接当对象用，结果卡片上全是 undefined 显示成 "—"。
+        const list = await api('/api/datasets/' + id + '/model');
+        modelList.value = Array.isArray(list) ? list : (list ? [list] : []);
+        model.value = modelList.value.find(m => m.active) || modelList.value[0] || null;
+      } catch (e) { modelList.value = []; model.value = null; }
+      await loadExperiments();
+    }
+
+    const dataset = computed(() => datasets.value.find(d => d.datasetId === datasetId.value) || null);
+    const featureWeights = computed(() => {
+      const m = model.value;
+      if (!m) return [];
+      let w = m.weights;
+      if (typeof w === 'string') { try { w = JSON.parse(w); } catch (e) { w = null; } }
+      if (!Array.isArray(w)) return [];
+      // weights 是对象数组（含系数与重要性），不是「特征名 → 系数」的字典；
+      // importance 是模型自己算的归一化重要度，正好用来画贡献条
+      features.value = w.map(x => x.feature);
+      return w.map(x => ({ name: x.feature, value: x.coefficient, importance: x.importance }));
+    });
+
+    async function loadQuality() {
+      await guard('validate', async () => { quality.value = await api('/api/datasets/' + datasetId.value + '/quality'); });
+    }
+    async function loadDiag() {
+      await guard('validate', async () => { diag.value = await api('/api/datasets/' + datasetId.value + '/snapshot-diag'); });
+    }
+    async function trainModel() {
+      await guard('train', async () => {
+        model.value = await api('/api/datasets/' + datasetId.value + '/model/train', { method: 'POST', body: {} });
+      }, '模型训练完成（同数据 + 同种子 → 权重逐位相同）');
+    }
+
+    /* ------------------------------------------------------------ 情景构造 */
+    const FIELDS = { DISCOUNT: ['threshold','amount'], PRICE: ['multiply'], PROBABILITY: ['multiplier'] };
+    const fieldsOf = (t) => FIELDS[t] || [];
+    function addChange() { changes.value.push({ ruleType:'DISCOUNT', field:'threshold', from:100, to:80 }); }
+    function addPreset(kind) {
+      if (kind === '满80减15') {
+        changes.value = [
+          { ruleType:'DISCOUNT', field:'threshold', from:100, to:80 },
+          { ruleType:'DISCOUNT', field:'amount', from:10, to:15 }
+        ];
+      } else {
+        changes.value = [{ ruleType:'PRICE', field:'multiply', from:1, to:0.9 }];
+      }
+    }
+    const dslBody = () => ({
+      datasetId: datasetId.value,
+      dsl: { datasetId: datasetId.value, name: '控制台情景', durationDays: params.durationDays, changes: changes.value }
+    });
+
+    async function validateManual() {
+      await guard('validate', async () => {
+        validation.value = await api('/api/scenarios/validate', { method:'POST', body: dslBody() });
+      });
+    }
+
+    async function compileNL() {
+      await guard('compile', async () => {
+        compile.value = await api('/api/ai/scenario/compile',
+          { method:'POST', body: { datasetId: datasetId.value, text: nlText.value } });
+        if (compile.value?.validation?.ruleDiff) validation.value = compile.value.validation;
+      });
+    }
+    function useCompiledDsl() {
+      const d = compile.value?.dsl;
+      if (d?.changes) { changes.value = JSON.parse(JSON.stringify(d.changes)); notice.value = '已把编译出的改动填进手工编辑器（可直接编辑后重跑）'; }
+    }
+
+    /* ------------------------------------------------------------ 执行 */
+    const expBody = () => Object.assign({
+      datasetId: datasetId.value, simulations: params.simulations, seed: params.seed,
+      durationDays: params.durationDays, activeCustomers: params.activeCustomers,
+      candidatesPerCustomer: params.candidatesPerCustomer, sync: params.sync
+    }, dslBody());
+
+    async function runExperiment() {
+      await guard('run', async () => {
+        let view;
+        if (params.sync) {
+          view = await api('/api/experiments', { method:'POST', body: expBody() });
+          await loadResultView(view);
+        } else {
+          view = await api('/api/experiments', { method:'POST', body: expBody() });
+          await waitAsync(view.experimentId);
+        }
+        await loadExperiments();
+        await refreshCache();
+        notice.value = '实验完成（#'.concat(result.value.experimentId, result.value.cacheHit ? '，命中缓存' : '，本次现算', '）');
+      });
+    }
+
+    /** 异步 + SSE：进度推送，完成事件里直接带完整结果。SSE 断开时退化为轮询，保证不会卡住。 */
+    async function waitAsync(id) {
+      progress.visible = true; progress.progress = 0; progress.status = 'RUNNING'; progress.stage = '已提交';
+      try {
+        await new Promise((resolve) => {
+          let settled = false;
+          const finish = (v) => { if (settled) return; settled = true; try { es.close(); } catch (e) {} resolve(v); };
+          const es = new EventSource('/api/experiments/' + id + '/progress');
+          es.onmessage = (ev) => {
+            let d = null;
+            try { d = JSON.parse(ev.data); } catch (e) { return; }
+            progress.progress = d.progress ?? progress.progress;
+            progress.status = d.status || progress.status;
+            progress.stage = d.stage || progress.stage;
+            if (d.result) { loadResultView(d.result); finish(d.result); }
+            else if (d.status === 'SUCCESS' || d.status === 'FAILED') finish(null);
+          };
+          es.onerror = () => finish(null);   // 断流就退化为下面的轮询
+        });
+      } finally {
+        progress.visible = false;
+      }
+      // 兜底：无论如何都去查一次最终状态（SSE 可能恰好错过完成事件）
+      const view = await api('/api/experiments/' + id);
+      await loadResultView(view);
+    }
+
+    /**
+     * 渲染结果。表格数据**故意取自后端 /table 接口**，而不是前端自己从 comparisons 拼：
+     * 后端 /table 里才有 effectSizeLevel / ci95Text 这类"给人看的"派生字段
+     * （effectSizeLevel 在 Java 里是方法不是 record 分量，JSON 里根本不出现 ——
+     *  前端自己算会变成第二份口径，迟早与后端不一致）。
+     */
+    async function loadResultView(v) {
+      result.value = v;
+      explanation.value = null;
+      table.value = [];
+      if (!v || !v.experimentId) return;
+      try {
+        const t = await api('/api/experiments/' + v.experimentId + '/table');
+        table.value = t.rows || [];
+      } catch (e) {
+        // /table 拿不到时退化为用 comparisons 自己拼（缺效应量等级，但数字仍来自引擎）
+        table.value = (v.comparisons || []).map(c => ({
+          metric: c.metric, label: c.label, unit: c.unit,
+          baselineMean: c.baseline?.mean, scenarioMean: c.scenario?.mean,
+          baselineP5: c.baseline?.p5, baselineP95: c.baseline?.p95,
+          scenarioP5: c.scenario?.p5, scenarioP95: c.scenario?.p95,
+          changeRate: c.changeRate * 100, deltaMean: c.deltaMean, tStat: c.tStat,
+          pValue: c.pValue, ci95Text: '[' + c.ci95Low + ', ' + c.ci95High + ']',
+          cohensD: c.cohensD, effectSizeLevel: '—', significant: c.significant
+        }));
+      }
+    }
+
+    async function loadResult(id) {
+      await guard('run', async () => { await loadResultView(await api('/api/experiments/' + id)); });
+    }
+
+    async function explainCurrent() {
+      await guard('explain', async () => {
+        const r = await api('/api/ai/explain/' + result.value.experimentId, { method:'POST', body: {} });
+        explanation.value = r.explanation || r.error || '(空)';
+      });
+    }
+
+    /** 恒等自检：不改任何规则。两臂必须逐位相同，变化率必须精确为 0。 */
+    async function runIdentity() {
+      await guard('identity', async () => {
+        const v = await api('/api/experiments/identity', { method:'POST', body: {
+          datasetId: datasetId.value, simulations: params.simulations, seed: params.seed,
+          durationDays: params.durationDays, activeCustomers: params.activeCustomers,
+          candidatesPerCustomer: params.candidatesPerCustomer } });
+        await loadResultView(v);
+        const bad = (v.comparisons || []).filter(c => c.changeRate !== 0 || c.deltaMean !== 0);
+        notice.value = bad.length === 0
+          ? '恒等自检通过：所有指标变化率精确为 0，两臂逐位相同 ✓'
+          : '恒等自检失败：' + bad.map(b => b.metric).join('、') + ' 的变化率不为 0 ✗';
+        if (bad.length) error.value = { code: -2, message: '恒等实验出现非零变化率：' + bad.map(b => b.metric).join('、') };
+      });
+      await loadExperiments();
+    }
+
+    /** 并发去重：5 个相同请求（新种子保证是新指纹），看有几个命中缓存、是否只算了一次。 */
+    async function runConcurrent() {
+      await guard('concurrent', async () => {
+        const seed = 20260919 + (Date.now() % 100000);
+        const body = Object.assign({}, expBody(), { seed, sync: true });
+        const t0 = performance.now();
+        const results = await Promise.all([1,2,3,4,5].map(() =>
+          api('/api/experiments', { method:'POST', body }).catch(e => ({ __err: e }))));
+        const ms = Math.round(performance.now() - t0);
+        const errs = results.filter(r => r.__err);
+        if (errs.length) { error.value = errs[0].__err; return; }
+        const hits = results.filter(r => r.cacheHit).length;
+        const gmv = new Set(results.map(r => {
+          const c = (r.comparisons || []).find(x => x.metric === 'GMV');
+          return c ? c.scenario.mean : 'x';
+        }));
+        notice.value = '并发 5 个相同请求：' + hits + ' 个命中缓存（' + (5 - hits) + ' 个真算），'
+          + '结果取值种类 ' + gmv.size + '（必须为 1），总耗时 ' + ms + ' ms';
+        if (gmv.size !== 1) error.value = { code: -3, message: '并发结果不一致：' + gmv.size + ' 种取值（应为 1）' };
+        await loadResultView(results[0]);
+      });
+      await loadExperiments();
+      await refreshCache();
+    }
+
+    async function runWhatIf() {
+      await guard('whatif', async () => {
+        const r = await api('/api/ai/whatif', { method:'POST', body: {
+          datasetId: datasetId.value, text: nlText.value,
+          simulations: params.simulations, durationDays: params.durationDays } });
+        compile.value = r.compilation;
+        if (r.compilation?.validation) validation.value = r.compilation.validation;
+        if (r.experiment) await loadResultView(r.experiment);
+        explanation.value = r.explanation?.text || r.explanation || null;
+        if (r.experiment) await loadExperiments();
+        notice.value = r.experiment
+          ? '一键 What-If 完成：实验 #' + r.experiment.experimentId + '（AI 只做了编译与解释，数字全部来自引擎）'
+          : 'AI 编译未通过：' + (r.aiError || r.compilation?.error || '见下方编译输出');
+      });
+    }
+
+    async function askAgent(readOnly) {
+      await guard('ask', async () => {
+        agentAnswer.value = await api('/api/ai/ask',
+          { method:'POST', body: { question: agentQuestion.value, readOnly } });
+      });
+    }
+
+    /* ------------------------------------------------------------ 历史 / 缓存 */
+    async function loadExperiments() {
+      experiments.value = await api('/api/experiments?datasetId=' + datasetId.value + '&limit=30');
+    }
+    async function refreshCache() {
+      try { cacheStats.value = await api('/api/experiments/cache-stats'); } catch (e) { cacheStats.value = null; }
+    }
+
+    /* ------------------------------------------------------------ 结果渲染辅助 */
+    const headline = computed(() => {
+      const rows = table.value;
+      if (!rows.length) return '';
+      const pick = ['GMV','ORDERS','PROFIT','DISCOUNT_COST'];
+      return rows.filter(r => pick.includes(r.metric)).map(r =>
+        r.label + ' ' + pct(r.changeRate) + (r.significant ? '(显著)' : '(不显著)')).join('；');
+    });
+    const diag2 = computed(() => result.value?.diagnostics || {});
+
+    /** 分布条：两臂用同一个横轴刻度（各自 [P5,P95] 的最大跨度），否则两条无法比较。 */
+    function barOf(r, arm) {
+      const lo = Math.min(r.baselineP5, r.scenarioP5);
+      const hi = Math.max(r.baselineP95, r.scenarioP95);
+      const span = (hi - lo) || 1;
+      const p5 = arm === 'baseline' ? r.baselineP5 : r.scenarioP5;
+      const p95 = arm === 'baseline' ? r.baselineP95 : r.scenarioP95;
+      const left = ((p5 - lo) / span) * 100;
+      const width = Math.max(2, ((p95 - p5) / span) * 100);
+      return { left: left + '%', width: width + '%' };
+    }
+
+    /* ------------------------------------------------------------ AI 判列 */
+
+    /** 判列生产者状态：这次是 AI 判还是规则判、哪个模型、哪个提示词版本。 */
+    async function loadSchemaProducer() {
+      try { schemaProducerStatus.value = await api('/api/ai/schema/producer'); }
+      catch (e) { schemaProducerStatus.value = {}; }
+    }
+
+    async function runSchemaPropose() {
+      if (!schemaPath.value.trim()) { error.value = { code: -1, message: '先填一个 CSV 路径' }; return; }
+      await guard('schema', async () => {
+        schema.value = null;
+        Object.keys(schemaEdits).forEach(k => delete schemaEdits[k]);
+        schemaResolved.value = false;
+        const p = await api('/api/ai/schema/propose', { method: 'POST',
+          body: { path: schemaPath.value.trim(), producer: schemaProducer.value } });
+        schema.value = p;
+        schemaDomain.value = schemaDomain.value || p.declaredDomain || '';
+        // 判定者/模型要能一眼看到：AI 判和规则判的结论可信度不一样
+        schemaProducerStatus.value = Object.assign({}, schemaProducerStatus.value, {
+          lastProducer: p.producer, lastModel: p.model, lastPromptVersion: p.promptVersion });
+      }, '判列完成');
+    }
+
+    /** 人工确认并冻结：把有争议的列按下拉改判，然后落成 domains/<领域名>.json。 */
+    async function confirmSchema() {
+      if (!schema.value) return;
+      const overrides = {};
+      Object.keys(schemaEdits).forEach(k => { if (schemaEdits[k]) overrides[k] = schemaEdits[k]; });
+      await guard('confirmSchema', async () => {
+        const body = {
+          domain: schemaDomain.value.trim() || schema.value.declaredDomain,
+          resolveUnknowns: schemaResolved.value,
+          columns: overrides
+        };
+        const out = await api('/api/ai/schema/' + schema.value.proposalId + '/confirm',
+          { method: 'POST', body });
+        notice.value = '已冻结 → ' + out.configPath + '（领域 ' + out.domain + '；重启应用后生效）';
+        await loadSchemaProducer();
+      }, '冻结成功');
+    }
+
+    const capLabel = (c) => ({
+      CAPABLE: '决策型 —— 表内有可操纵的杠杆，可直接做反事实',
+      IMPACT_ONLY: '冲击型 —— 没有真实杠杆，只能注入情景（需声明注入边界）',
+      NOT_CAPABLE: '不可做 —— 明确拒绝：这张表没有可学的"改变输入→观察结果"关系'
+    }[c] || c);
+    const capClass = (c) => ({ CAPABLE: 'ok', IMPACT_ONLY: 'warn', NOT_CAPABLE: 'err' }[c] || 'warn');
+
+    onMounted(refreshAll);
+
+    return {
+      // 状态
+      health, aiStatus, cacheStats, datasets, datasetId, dataset, profile, quality, diag,
+      rules, model, modelList, features, featureWeights, nlText, compile, validation, changes, params,
+      result, table, headline, explanation, experiments, agentQuestion, agentAnswer,
+      error, notice, logs, progress, busy, diag2,
+      schemaPath, schemaProducer, schema, schemaProducerStatus, schemaEdits, schemaDomain, schemaResolved,
+      // 方法
+      refreshAll, onDatasetChange, loadQuality, loadDiag, trainModel, fieldsOf, addChange,
+      addPreset, validateManual, compileNL, useCompiledDsl, runExperiment, runIdentity,
+      runConcurrent, runWhatIf, askAgent, loadResult, explainCurrent, loadExperiments,
+      runSchemaPropose, confirmSchema, capLabel, capClass, roleOptions,
+      // 工具
+      num, numSmart, pct, pfmt, cls, pretty, dotOf, codeLabel, codeHint, barOf, JSON
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

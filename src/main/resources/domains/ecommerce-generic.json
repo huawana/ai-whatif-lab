@@ -1,0 +1,39 @@
+{
+  "domain": "ecommerce-generic",
+  "description": "电商（配置驱动版）：UCI Online Retail 形态，一行一笔交易明细。与手写 EcommerceExtractor 语义逐条等价，用于验证『配置层真的承载了业务语义』。",
+
+  "entityTypes": { "main": "Customer", "item": "Product" },
+  "eventTypes":  { "positive": "PURCHASE", "negative": "CANCEL" },
+
+  "requiredFields": ["entityId", "productId", "eventTime", "quantity", "unitPrice"],
+  "fieldTypes": {
+    "eventTime": "time",
+    "quantity": "int",
+    "unitPrice": "decimal"
+  },
+
+  "skip": [
+    { "field": "entityId",  "op": "blank",      "reason": "缺少客户ID(匿名交易)" },
+    { "field": "productId", "op": "blank",      "reason": "缺少商品编码" },
+    { "field": "eventTime", "op": "unparsable", "reason": "时间无法解析" },
+    { "field": "quantity",  "op": "unparsable", "reason": "数量为0或非法" },
+    { "field": "quantity",  "op": "eq", "value": 0, "reason": "数量为0或非法" },
+    { "field": "unitPrice", "op": "unparsable", "reason": "单价<=0(非商品行/费用行)" },
+    { "field": "unitPrice", "op": "lte", "value": 0, "reason": "单价<=0(非商品行/费用行)" }
+  ],
+
+  "classify": [
+    { "field": "quantity", "op": "lt", "value": 0, "as": "negative" },
+    { "field": "orderId",  "op": "startsWith", "value": "C", "as": "negative" }
+  ],
+  "defaultEventType": "positive",
+
+  "absoluteQuantity": true,
+  "amount": { "op": "multiply", "abs": ["quantity"], "with": ["unitPrice"] },
+
+  "entityAttributes": [
+    { "target": "main", "name": "group",         "from": "group",       "type": "string" },
+    { "target": "item", "name": "description",   "from": "description", "type": "string" },
+    { "target": "item", "name": "lastUnitPrice", "from": "unitPrice",   "type": "decimal" }
+  ]
+}

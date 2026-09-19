@@ -1,0 +1,14 @@
+{
+  "featureSet": "retail-default",
+  "description": "默认特征集：与改造前写死在代码里的 7 个特征逐位等价（顺序也一致），所以老数据集与老模型继续可用。任何交易型领域（零售/游戏内购/SaaS 用量付费/会员消费）都能直接用。",
+
+  "features": [
+    { "name": "logUnitPrice",         "type": "unitPrice",           "transform": "log",     "epsilon": 0.01 },
+    { "name": "perceivedDiscount",    "type": "discountRate",        "transform": "identity" },
+    { "name": "logCustomerFreq",      "type": "entityEvents",        "transform": "log1p" },
+    { "name": "customerRecency",      "type": "entityRecencyDays",   "transform": "recency", "halfLifeDays": 30 },
+    { "name": "logProductPopularity", "type": "itemEvents",          "transform": "log1p" },
+    { "name": "logCustomerSpend",     "type": "entityAmount",        "transform": "log1p" },
+    { "name": "pairAffinity",         "type": "pairEvents",          "transform": "log1p" }
+  ]
+}
